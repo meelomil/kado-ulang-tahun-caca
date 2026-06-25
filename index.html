@@ -7,6 +7,19 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Happy 20th Birthday, Caca 🌸</title>
 
+<!-- ===================== FAVICON ===================== -->
+<!-- Ikon kecil di tab browser, dibuat inline pakai SVG hati pink (tidak perlu file gambar terpisah) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='75' font-size='80' text-anchor='middle'%3E%F0%9F%8C%B8%3C/text%3E%3C/svg%3E">
+
+<!-- ===================== OPEN GRAPH (preview saat link dishare di WhatsApp/Sosmed) ===================== -->
+<!-- GANTI URL gambar di bawah dengan link foto kamu di GitHub setelah website online -->
+<!-- Format link GitHub: https://raw.githubusercontent.com/USERNAME/NAMA-REPO/main/assets/nama-foto.jpg -->
+<meta property="og:title" content="Happy 20th Birthday, Caca 🌸">
+<meta property="og:description" content="Sebuah kejutan kecil dari Mail, untuk Elizabeth Eucharistiana Rafin.">
+<meta property="og:image" content="https://placehold.co/1200x630/ffb6c9/ffffff?text=Happy+20th+Birthday+Caca">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
 <!-- ===================== GOOGLE FONTS ===================== -->
 <!-- Dancing Script untuk judul romantis/script, Quicksand untuk teks modern & bulat, Poppins untuk body -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -566,29 +579,30 @@ section{
 }
 .video-grid{
   display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2rem;
 }
-.video-thumb{
-  position:relative;
+.video-slot{
   border-radius: var(--radius-md);
   overflow:hidden;
-  aspect-ratio:16/10;
-  background: linear-gradient(135deg, var(--pink), var(--orange));
-  display:flex;
-  align-items:center;
-  justify-content:center;
   box-shadow: 0 6px 18px rgba(255,143,171,0.15);
+  background:#fff;
 }
-.video-thumb i{
-  font-size: 2.2rem;
-  color:#fff;
-  background: rgba(0,0,0,0.25);
-  width: 60px; height:60px;
-  border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
+.video-slot video{
+  width:100%;
+  aspect-ratio:16/10;
+  display:block;
+  background:#000;
 }
-@media (max-width: 700px){ .video-grid{ grid-template-columns: repeat(2, 1fr); } }
+.video-caption{
+  font-family: var(--font-heading);
+  font-weight:600;
+  font-size:0.85rem;
+  color: var(--pink-deep);
+  text-align:center;
+  padding: 0.6rem;
+}
+@media (max-width: 700px){ .video-grid{ grid-template-columns: 1fr; } }
 
 /* =====================================================================
    SECTION 5 — MESSAGE WALL (tersimpan di Local Storage)
@@ -1248,12 +1262,34 @@ footer i{ color: var(--pink-deep); }
       <div class="gallery-item"><img src="https://placehold.co/300x300/ffe8d6/ffa873?text=Foto+12" alt="Placeholder foto 12"></div>
     </div>
 
-    <!-- Area video placeholder -->
+    <!-- Area video kenangan — 4 slot, ganti src="..." dengan link video kamu dari GitHub -->
+    <!-- Format link GitHub: https://raw.githubusercontent.com/USERNAME/NAMA-REPO/main/assets/video1.mp4 -->
     <h3 class="video-area-title"><i class="fa-solid fa-video"></i>&nbsp; Video Kenangan</h3>
     <div class="video-grid">
-      <div class="video-thumb"><i class="fa-solid fa-play"></i></div>
-      <div class="video-thumb"><i class="fa-solid fa-play"></i></div>
-      <div class="video-thumb"><i class="fa-solid fa-play"></i></div>
+      <div class="video-slot">
+        <video controls poster="https://placehold.co/400x250/ffd6e6/ff8fab?text=Video+1" preload="metadata">
+          <source src="" type="video/mp4">
+        </video>
+        <p class="video-caption">Judul Video 1</p>
+      </div>
+      <div class="video-slot">
+        <video controls poster="https://placehold.co/400x250/ffe8d6/ffa873?text=Video+2" preload="metadata">
+          <source src="" type="video/mp4">
+        </video>
+        <p class="video-caption">Judul Video 2</p>
+      </div>
+      <div class="video-slot">
+        <video controls poster="https://placehold.co/400x250/ffd6e6/ff8fab?text=Video+3" preload="metadata">
+          <source src="" type="video/mp4">
+        </video>
+        <p class="video-caption">Judul Video 3</p>
+      </div>
+      <div class="video-slot">
+        <video controls poster="https://placehold.co/400x250/ffe8d6/ffa873?text=Video+4" preload="metadata">
+          <source src="" type="video/mp4">
+        </video>
+        <p class="video-caption">Judul Video 4</p>
+      </div>
     </div>
   </section>
 
