@@ -487,7 +487,7 @@ section{
 .timeline-card:hover{ transform: translateY(-6px); }
 .timeline-photo{
   width:100%;
-  height: 150px;
+  aspect-ratio: 4/3; /* nilai default sementara, akan disesuaikan otomatis oleh JS sesuai rasio asli foto */
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--pink-light), var(--orange-light));
   display:flex;
@@ -498,7 +498,9 @@ section{
   font-size: 1.8rem;
   overflow:hidden;
 }
-.timeline-photo img{ width:100%; height:100%; object-fit:contain; background: linear-gradient(135deg, var(--pink-light), var(--orange-light)); }
+/* object-fit: cover aman dipakai di sini karena kotak sudah ikut rasio asli foto (lewat JS),
+   jadi foto akan selalu pas mengisi kotak tanpa terpotong bagian penting */
+.timeline-photo img{ width:100%; height:100%; object-fit:cover; }
 .timeline-card h3{
   font-family: var(--font-heading);
   color: var(--pink-deep);
@@ -569,6 +571,56 @@ section{
 
 @media (max-width: 900px){ .gallery-grid{ grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 600px){ .gallery-grid{ grid-template-columns: repeat(2, 1fr); } }
+
+/* =====================================================================
+   REACTION BAR — baris emoji reaksi untuk tiap foto/video di Galeri
+   ===================================================================== */
+/* Di dalam gallery-item (foto): overlay di bagian bawah, muncul saat hover/tap,
+   karena .gallery-item punya overflow:hidden + aspect-ratio 1/1 untuk crop foto persegi */
+.gallery-item .reaction-bar{
+  position:absolute;
+  left:0; right:0; bottom:0;
+  z-index:2;
+  display:flex;
+  justify-content:center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.4rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+  opacity:0;
+  transition: opacity 0.25s ease;
+}
+.gallery-item:hover .reaction-bar,
+.gallery-item .reaction-bar.has-reactions{ opacity:1; }
+
+/* Di dalam video-slot: elemen biasa di bawah caption, selalu terlihat (tidak perlu hover) */
+.video-slot .reaction-bar{
+  display:flex;
+  justify-content:center;
+  gap: 0.4rem;
+  padding: 0 0.6rem 0.7rem;
+  flex-wrap:wrap;
+}
+
+.reaction-btn{
+  background: rgba(255,255,255,0.9);
+  border: none;
+  border-radius: 50px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.85rem;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap: 0.2rem;
+  transition: transform 0.15s ease, background 0.15s ease;
+  line-height:1.3;
+}
+.reaction-btn:hover{ transform: scale(1.15); background:#fff; }
+.reaction-btn.user-reacted{ background: var(--pink-deep); color:#fff; }
+.reaction-btn .reaction-count{
+  font-family: var(--font-heading);
+  font-weight:700;
+  font-size: 0.72rem;
+}
 
 .video-area-title{
   font-family: var(--font-heading);
@@ -644,6 +696,103 @@ section{
   transition: transform 0.25s ease;
 }
 .message-form button:hover{ transform: translateY(-3px); }
+
+/* Wrapper textarea + tombol emoji */
+.msg-textarea-wrap{ position:relative; }
+.emoji-toggle-btn{
+  position:absolute;
+  right: 10px;
+  bottom: 18px;
+  background:#fff;
+  border: 2px solid var(--pink-light);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1.05rem;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.emoji-toggle-btn:hover{ transform: scale(1.1); border-color: var(--pink-deep); }
+
+.emoji-panel{
+  position:absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.5rem;
+  background:#fff;
+  border: 2px solid var(--pink-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 0.7rem;
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+  z-index: 20;
+  width: 280px;
+}
+.emoji-panel button{
+  background:none;
+  border:none;
+  font-size: 1.3rem;
+  cursor:pointer;
+  border-radius: 8px;
+  padding: 0.2rem;
+  transition: background 0.15s ease;
+  width: auto; /* override style .message-form button yang width:100% */
+}
+.emoji-panel button:hover{ background: var(--pink-light); transform:none; }
+
+/* Upload foto opsional di Dinding Pesan */
+.msg-photo-label{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 0.5rem;
+  border: 2px dashed var(--pink);
+  border-radius: var(--radius-md);
+  padding: 0.7rem;
+  margin-bottom: 0.9rem;
+  cursor:pointer;
+  font-family: var(--font-heading);
+  font-weight:600;
+  font-size: 0.85rem;
+  color: var(--pink-deep);
+  transition: background 0.2s ease;
+}
+.msg-photo-label:hover{ background: var(--pink-light); }
+
+.msg-photo-preview-wrap{
+  position:relative;
+  width: 120px;
+  margin: 0 auto 0.9rem;
+}
+.msg-photo-preview-wrap img{
+  width:100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+.msg-photo-preview-wrap button{
+  position:absolute;
+  top:-8px; right:-8px;
+  width: 26px; height:26px;
+  border-radius:50%;
+  background: var(--pink-deep);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  font-size: 0.75rem;
+}
+
+/* Foto yang dilampirkan pada bubble pesan yang sudah terkirim */
+.message-bubble .msg-photo{
+  max-width: 220px;
+  border-radius: var(--radius-md);
+  margin-top: 0.6rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
 
 .message-list{
   max-width: 700px;
@@ -867,6 +1016,57 @@ section{
   font-size:0.85rem;
 }
 .yt-embed-wrap iframe{ width:100%; height:100%; border:0; }
+
+/* Hasil pencarian YouTube */
+.yt-search-results{
+  display:flex;
+  flex-direction:column;
+  gap: 0.6rem;
+  max-height: 320px;
+  overflow-y:auto;
+  margin-bottom: 1rem;
+}
+.yt-result-card{
+  display:flex;
+  gap: 0.8rem;
+  background: var(--pink-light);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  cursor:pointer;
+  transition: background 0.2s ease;
+  text-align:left;
+}
+.yt-result-card:hover{ background: var(--orange-light); }
+.yt-result-card img{
+  width: 100px;
+  height: 60px;
+  object-fit:cover;
+  border-radius: 8px;
+  flex-shrink:0;
+}
+.yt-result-info{ overflow:hidden; }
+.yt-result-info .yt-result-title{
+  font-family: var(--font-heading);
+  font-weight:700;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  display:-webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:hidden;
+}
+.yt-result-info .yt-result-channel{
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin-top: 0.2rem;
+}
+.yt-search-status{
+  text-align:center;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-style:italic;
+  padding: 0.8rem;
+}
 
 /* Tombol simpan ke favorit */
 .yt-fav-btn{
@@ -1332,47 +1532,87 @@ footer i{ color: var(--pink-deep); }
 
     <!-- Grid foto placeholder, minimal 12 -->
     <div class="gallery-grid">
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%281%29.jpeg" alt="Placeholder foto 1"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%281%29.jpg" alt="Placeholder foto 2"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%282%29.jpeg" alt="Placeholder foto 3"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%282%29.jpg" alt="Placeholder foto 4"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%283%29.jpeg" alt="Placeholder foto 5"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%283%29.jpg" alt="Placeholder foto 6"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%285%29.jpeg" alt="Placeholder foto 7"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%289%29.jpg" alt="Placeholder foto 8"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%287%29.jpeg" alt="Placeholder foto 9"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%289%29.jpeg" alt="Placeholder foto 10"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%2812%29.jpg" alt="Placeholder foto 11"></div>
-      <div class="gallery-item"><img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%288%29.jpg" alt="Placeholder foto 12"></div>
+      <div class="gallery-item" data-item-id="gallery-1">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%281%29.jpeg" alt="Placeholder foto 1">
+        <div class="reaction-bar" data-item-id="gallery-1"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-2">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%281%29.jpg" alt="Placeholder foto 2">
+        <div class="reaction-bar" data-item-id="gallery-2"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-3">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%282%29.jpeg" alt="Placeholder foto 3">
+        <div class="reaction-bar" data-item-id="gallery-3"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-4">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%282%29.jpg" alt="Placeholder foto 4">
+        <div class="reaction-bar" data-item-id="gallery-4"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-5">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%283%29.jpeg" alt="Placeholder foto 5">
+        <div class="reaction-bar" data-item-id="gallery-5"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-6">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%283%29.jpg" alt="Placeholder foto 6">
+        <div class="reaction-bar" data-item-id="gallery-6"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-7">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%285%29.jpeg" alt="Placeholder foto 7">
+        <div class="reaction-bar" data-item-id="gallery-7"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-8">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%289%29.jpg" alt="Placeholder foto 8">
+        <div class="reaction-bar" data-item-id="gallery-8"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-9">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%287%29.jpeg" alt="Placeholder foto 9">
+        <div class="reaction-bar" data-item-id="gallery-9"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-10">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%289%29.jpeg" alt="Placeholder foto 10">
+        <div class="reaction-bar" data-item-id="gallery-10"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-11">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%2812%29.jpg" alt="Placeholder foto 11">
+        <div class="reaction-bar" data-item-id="gallery-11"></div>
+      </div>
+      <div class="gallery-item" data-item-id="gallery-12">
+        <img src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/fotoalbum%20%288%29.jpg" alt="Placeholder foto 12">
+        <div class="reaction-bar" data-item-id="gallery-12"></div>
+      </div>
     </div>
 
     <!-- Area video kenangan — 4 slot, ganti src="..." dengan link video kamu dari GitHub -->
     <!-- Format link GitHub: https://raw.githubusercontent.com/USERNAME/NAMA-REPO/main/assets/video1.mp4 -->
     <h3 class="video-area-title"><i class="fa-solid fa-video"></i>&nbsp; Video Kenangan</h3>
     <div class="video-grid">
-      <div class="video-slot">
+      <div class="video-slot" data-item-id="video-1">
         <video controls poster="https://placehold.co/400x250/ffd6e6/ff8fab?text=Video+1" preload="metadata">
           <source src="" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 1</p>
+        <div class="reaction-bar" data-item-id="video-1"></div>
       </div>
-      <div class="video-slot">
+      <div class="video-slot" data-item-id="video-2">
         <video controls poster="https://placehold.co/400x250/ffe8d6/ffa873?text=Video+2" preload="metadata">
           <source src="" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 2</p>
+        <div class="reaction-bar" data-item-id="video-2"></div>
       </div>
-      <div class="video-slot">
+      <div class="video-slot" data-item-id="video-3">
         <video controls poster="https://placehold.co/400x250/ffd6e6/ff8fab?text=Video+3" preload="metadata">
           <source src="" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 3</p>
+        <div class="reaction-bar" data-item-id="video-3"></div>
       </div>
-      <div class="video-slot">
+      <div class="video-slot" data-item-id="video-4">
         <video controls poster="https://placehold.co/400x250/ffe8d6/ffa873?text=Video+4" preload="metadata">
           <source src="" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 4</p>
+        <div class="reaction-bar" data-item-id="video-4"></div>
       </div>
     </div>
   </section>
@@ -1394,7 +1634,26 @@ footer i{ color: var(--pink-deep); }
 
     <form class="message-form" id="message-form">
       <input type="text" id="msg-name" placeholder="Nama kamu" required maxlength="40">
-      <textarea id="msg-text" rows="3" placeholder="Tulis pesan ulang tahun untuk Caca..." required maxlength="300"></textarea>
+
+      <!-- Wrapper textarea + tombol emoji, supaya tombolnya bisa "menempel" di pojok textarea -->
+      <div class="msg-textarea-wrap">
+        <textarea id="msg-text" rows="3" placeholder="Tulis pesan ulang tahun untuk Caca..." required maxlength="300"></textarea>
+        <button type="button" class="emoji-toggle-btn" id="btn-toggle-emoji" title="Sisipkan emoji">😊</button>
+
+        <!-- Panel emoji, tersembunyi sampai tombol di atas diklik -->
+        <div class="emoji-panel" id="emoji-panel" hidden></div>
+      </div>
+
+      <!-- Upload foto opsional untuk dilampirkan bersama pesan -->
+      <label class="msg-photo-label" id="msg-photo-label">
+        <i class="fa-solid fa-image"></i> Tambah Foto (opsional)
+        <input type="file" id="msg-photo-input" accept="image/*" hidden>
+      </label>
+      <div class="msg-photo-preview-wrap" id="msg-photo-preview-wrap" hidden>
+        <img id="msg-photo-preview" alt="Preview foto pesan">
+        <button type="button" id="btn-remove-msg-photo" title="Hapus foto"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
       <button type="submit"><i class="fa-solid fa-paper-plane"></i>&nbsp; Kirim Pesan</button>
     </form>
 
@@ -1485,11 +1744,15 @@ footer i{ color: var(--pink-deep); }
     <div class="music-panel" id="panel-youtube">
       <div class="yt-box">
         <div class="yt-input-row">
-          <input type="text" id="yt-url-input" placeholder="Tempel link YouTube lagu favorit Caca di sini">
-          <button id="btn-load-yt"><i class="fa-solid fa-play"></i> Load Video</button>
+          <input type="text" id="yt-url-input" placeholder="Cari judul lagu favorit Caca di YouTube...">
+          <button id="btn-load-yt"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
         </div>
+
+        <!-- Hasil pencarian, dirender sebagai kartu-kartu klik untuk langsung memutar -->
+        <div class="yt-search-results" id="yt-search-results"></div>
+
         <div class="yt-embed-wrap" id="yt-embed-wrap">
-          <span>Video akan tampil di sini setelah link dimuat 🎵</span>
+          <span>Video akan tampil di sini setelah kamu pilih dari hasil pencarian 🎵</span>
         </div>
 
         <!-- Tombol simpan link yang sedang dimuat ke daftar favorit (tersimpan online via Firebase) -->
@@ -1647,6 +1910,26 @@ window.addEventListener('resize', checkReveal);
 
 
 /* ===================================================================
+   3b) TIMELINE PHOTO AUTO ASPECT-RATIO — kotak foto Timeline menyesuaikan
+        rasio asli tiap foto (16:9, 4:5, 1:1, dst), bukan dipaksa satu ukuran.
+   =================================================================== */
+document.querySelectorAll('.timeline-photo img').forEach((img) => {
+  function applyRatio(){
+    // naturalWidth/naturalHeight adalah ukuran asli file foto, bukan ukuran tampilan di layar
+    if (img.naturalWidth && img.naturalHeight){
+      img.closest('.timeline-photo').style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+    }
+  }
+  // Kalau foto sudah selesai dimuat duluan (cache), complete bernilai true dan onload tidak akan terpicu lagi
+  if (img.complete){
+    applyRatio();
+  } else {
+    img.addEventListener('load', applyRatio);
+  }
+});
+
+
+/* ===================================================================
    4) SURAT DARI MAIL — animasi mengetik (typewriter effect)
    =================================================================== */
 const letterContent =
@@ -1724,6 +2007,72 @@ const msgNameInput = document.getElementById('msg-name');
 const msgTextInput = document.getElementById('msg-text');
 const messageListEl = document.getElementById('message-list');
 
+// --- Upload foto opsional di Dinding Pesan ---
+const msgPhotoInput = document.getElementById('msg-photo-input');
+const msgPhotoPreviewWrap = document.getElementById('msg-photo-preview-wrap');
+const msgPhotoPreview = document.getElementById('msg-photo-preview');
+const btnRemoveMsgPhoto = document.getElementById('btn-remove-msg-photo');
+const msgPhotoLabel = document.getElementById('msg-photo-label');
+
+let selectedPhotoBase64 = null; // menyimpan foto terpilih dalam format base64, siap dikirim ke Firebase
+
+// Batas ukuran file mentah sebelum dikompres ke base64 (Firebase Realtime DB punya limit ukuran per node,
+// dan base64 membuat ukuran data ~33% lebih besar dari file aslinya, jadi foto perlu dikecilkan dulu)
+const MAX_PHOTO_DIMENSION = 800; // piksel, sisi terpanjang foto akan diperkecil ke ukuran ini kalau lebih besar
+
+msgPhotoInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')){
+    alert('File yang dipilih bukan gambar.');
+    msgPhotoInput.value = '';
+    return;
+  }
+
+  // Kompres & resize foto lewat canvas sebelum dijadikan base64, supaya ukuran datanya tidak terlalu besar
+  const img = new Image();
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    img.onload = () => {
+      const canvasTemp = document.createElement('canvas');
+      let { width, height } = img;
+
+      if (width > height && width > MAX_PHOTO_DIMENSION){
+        height = Math.round(height * (MAX_PHOTO_DIMENSION / width));
+        width = MAX_PHOTO_DIMENSION;
+      } else if (height > MAX_PHOTO_DIMENSION){
+        width = Math.round(width * (MAX_PHOTO_DIMENSION / height));
+        height = MAX_PHOTO_DIMENSION;
+      }
+
+      canvasTemp.width = width;
+      canvasTemp.height = height;
+      const tempCtx = canvasTemp.getContext('2d');
+      tempCtx.drawImage(img, 0, 0, width, height);
+
+      // Kualitas 0.7 cukup untuk preview pesan, sambil menjaga ukuran data tetap kecil
+      selectedPhotoBase64 = canvasTemp.toDataURL('image/jpeg', 0.7);
+
+      msgPhotoPreview.src = selectedPhotoBase64;
+      msgPhotoPreviewWrap.hidden = false;
+      msgPhotoLabel.hidden = true;
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function resetPhotoPreview(){
+  selectedPhotoBase64 = null;
+  msgPhotoInput.value = '';
+  msgPhotoPreviewWrap.hidden = true;
+  msgPhotoLabel.hidden = false;
+}
+
+btnRemoveMsgPhoto.addEventListener('click', resetPhotoPreview);
+
 // Firebase REST API: tambahkan ".json" di akhir URL untuk baca/tulis data
 const MESSAGES_ENDPOINT = `${FIREBASE_DB_URL}/messages.json`;
 
@@ -1772,13 +2121,14 @@ function renderMessages(data){
       <button class="msg-delete" data-key="${msg.firebaseKey}" title="Hapus pesan"><i class="fa-solid fa-trash"></i></button>
       <div class="msg-name">${escapeHTML(msg.name)}</div>
       <div class="msg-text">${escapeHTML(msg.text)}</div>
+      ${msg.photo ? `<img class="msg-photo" src="${msg.photo}" alt="Foto lampiran pesan" loading="lazy">` : ''}
       <div class="msg-time">${formatTimestamp(msg.id)}</div>
     `;
     messageListEl.appendChild(bubble);
   });
 }
 
-// --- Kirim pesan baru ke Firebase ---
+// --- Kirim pesan baru ke Firebase (dengan foto opsional) ---
 messageForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = msgNameInput.value.trim();
@@ -1790,15 +2140,19 @@ messageForm.addEventListener('submit', async (e) => {
   submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Mengirim...';
 
   try {
+    // Kalau ada foto yang dipilih, konversi dulu jadi base64 sebelum dikirim
+    const photoBase64 = selectedPhotoBase64 || null;
+
     // Firebase REST API: POST ke endpoint .json otomatis membuat entry baru dengan key unik
     const res = await fetch(MESSAGES_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: Date.now(), name, text })
+      body: JSON.stringify({ id: Date.now(), name, text, photo: photoBase64 })
     });
     if (!res.ok) throw new Error('Gagal mengirim pesan');
 
     messageForm.reset();
+    resetPhotoPreview(); // bersihkan preview foto & variabel base64 setelah berhasil kirim
     spawnHeart(); // sedikit feedback menyenangkan saat pesan terkirim
     await loadMessages(); // refresh daftar pesan supaya pesan baru langsung muncul
   } catch (err) {
@@ -1828,6 +2182,48 @@ messageListEl.addEventListener('click', async (e) => {
 });
 
 loadMessages(); // muat pesan pertama kali saat halaman dibuka
+
+// --- Emoji picker sederhana untuk Dinding Pesan ---
+// Daftar emoji umum yang relevan untuk ucapan ulang tahun (bisa ditambah/kurangi sendiri)
+const EMOJI_LIST = ['😀','😊','😍','🥰','😘','😂','🤣','😢','🥺','😎','🤩','😇','🎉','🎂','🎈','🎁','🌸','🌺','🌼','🌻','💐','🍰','🦫','❤️','💕','💖','💗','💝','✨','👍'];
+
+const btnToggleEmoji = document.getElementById('btn-toggle-emoji');
+const emojiPanel = document.getElementById('emoji-panel');
+
+// Render tombol-tombol emoji ke dalam panel (sekali saja saat halaman dimuat)
+EMOJI_LIST.forEach((emoji) => {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = emoji;
+  btn.addEventListener('click', () => {
+    insertAtCursor(msgTextInput, emoji);
+    emojiPanel.hidden = true; // tutup panel setelah pilih, biar tidak menutupi tombol kirim
+  });
+  emojiPanel.appendChild(btn);
+});
+
+btnToggleEmoji.addEventListener('click', (e) => {
+  e.stopPropagation();
+  emojiPanel.hidden = !emojiPanel.hidden;
+});
+
+// Tutup panel emoji kalau klik di luar area panel/tombolnya
+document.addEventListener('click', (e) => {
+  if (!emojiPanel.hidden && !emojiPanel.contains(e.target) && e.target !== btnToggleEmoji){
+    emojiPanel.hidden = true;
+  }
+});
+
+// Sisipkan teks (emoji) tepat di posisi kursor pada textarea, bukan selalu di akhir
+function insertAtCursor(textarea, text){
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const original = textarea.value;
+  textarea.value = original.slice(0, start) + text + original.slice(end);
+  const newPos = start + text.length;
+  textarea.focus();
+  textarea.setSelectionRange(newPos, newPos);
+}
 
 // Auto-refresh setiap 8 detik, supaya pesan baru dari device lain ikut muncul
 // tanpa perlu reload manual (polling sederhana, cukup untuk skala website kecil ini)
@@ -2010,69 +2406,89 @@ localAudioInput.addEventListener('change', (e) => {
   localNowPlaying.textContent = 'Sedang memutar: ' + file.name;
 });
 
-// --- YouTube embed ---
+// --- YouTube search & embed ---
 const ytUrlInput = document.getElementById('yt-url-input');
 const btnLoadYT = document.getElementById('btn-load-yt');
 const ytEmbedWrap = document.getElementById('yt-embed-wrap');
+const ytSearchResults = document.getElementById('yt-search-results');
 
-// Ambil video ID dari berbagai format URL YouTube yang umum
-// Diperlonggar supaya tetap kebaca walau ada www/m/music subdomain, http/https, atau tanpa protokol sama sekali
-function extractYouTubeID(url){
-  const patterns = [
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
-  ];
-  for (const pattern of patterns){
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return null;
-}
+// GANTI dengan API key YouTube Data API v3 milikmu sendiri
+// (lihat di Google Cloud Console > APIs & Services > Credentials)
+const YOUTUBE_API_KEY = 'AIzaSyA9ygBDDj-D32BdwdQ1QfioJGaZNXVwlRw';
 
 // Menyimpan video YouTube yang sedang dimuat, supaya tombol "Simpan ke Favorit" tahu video mana yang dimaksud
 let currentYtVideoId = null;
+let currentYtTitle = '';
+
+// --- Cari video di YouTube berdasarkan kata kunci, tampilkan sebagai kartu hasil ---
+async function searchYouTube(query){
+  ytSearchResults.innerHTML = '<p class="yt-search-status"><i class="fa-solid fa-spinner fa-spin"></i> Mencari...</p>';
+
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=8&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error){
+      // Error paling umum: quota habis, key salah, atau restriction domain belum sesuai
+      ytSearchResults.innerHTML = `<p class="yt-search-status">Pencarian gagal: ${escapeHTML(data.error.message)}</p>`;
+      return;
+    }
+
+    if (!data.items || data.items.length === 0){
+      ytSearchResults.innerHTML = '<p class="yt-search-status">Tidak ada hasil. Coba kata kunci lain.</p>';
+      return;
+    }
+
+    renderYtSearchResults(data.items);
+  } catch (err) {
+    ytSearchResults.innerHTML = '<p class="yt-search-status">Gagal mencari. Cek koneksi internet kamu.</p>';
+    console.error('YouTube search error:', err);
+  }
+}
+
+function renderYtSearchResults(items){
+  ytSearchResults.innerHTML = '';
+
+  items.forEach((item) => {
+    const videoId = item.id.videoId;
+    const title = item.snippet.title;
+    const channel = item.snippet.channelTitle;
+    const thumbnail = item.snippet.thumbnails.medium.url;
+
+    const card = document.createElement('div');
+    card.className = 'yt-result-card';
+    card.innerHTML = `
+      <img src="${thumbnail}" alt="Thumbnail" loading="lazy">
+      <div class="yt-result-info">
+        <div class="yt-result-title">${escapeHTML(title)}</div>
+        <div class="yt-result-channel">${escapeHTML(channel)}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => loadYouTubeVideo(videoId, title));
+    ytSearchResults.appendChild(card);
+  });
+}
 
 btnLoadYT.addEventListener('click', () => {
-  const url = ytUrlInput.value.trim();
-
-  if (!url){
-    ytEmbedWrap.innerHTML = '<span>Tempel link YouTube-nya dulu ya 🌼</span>';
+  const query = ytUrlInput.value.trim();
+  if (!query){
+    ytSearchResults.innerHTML = '<p class="yt-search-status">Ketik judul lagu yang mau dicari dulu ya 🌼</p>';
     return;
   }
-
-  const videoId = extractYouTubeID(url);
-
-  if (!videoId){
-    ytEmbedWrap.innerHTML = '<span>Link YouTube tidak terbaca. Pastikan format link lengkap, contoh: https://www.youtube.com/watch?v=xxxxxxxxxxx 🌼</span>';
-    currentYtVideoId = null;
-    return;
-  }
-
-  currentYtVideoId = videoId;
-
-  // Pakai youtube-nocookie.com: domain alternatif YouTube untuk embed,
-  // sering lebih jarang kena blokir tracker/privacy extension dibanding youtube.com biasa
-  ytEmbedWrap.innerHTML = `<iframe
-      src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1"
-      title="YouTube video player"
-      frameborder="0"
-      referrerpolicy="strict-origin-when-cross-origin"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen></iframe>`;
+  searchYouTube(query);
 });
 
-// Tekan Enter di input YouTube juga memuat video
+// Tekan Enter di kotak pencarian juga memicu pencarian
 ytUrlInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') btnLoadYT.click();
 });
 
-// Helper untuk memuat video dari videoId langsung (dipakai saat klik item favorit)
-function loadYouTubeVideo(videoId){
+// Memuat & memutar video dari videoId (dipanggil saat klik kartu hasil pencarian ATAU item favorit)
+function loadYouTubeVideo(videoId, title = ''){
   currentYtVideoId = videoId;
-  ytUrlInput.value = `https://youtu.be/${videoId}`;
+  currentYtTitle = title;
+
   ytEmbedWrap.innerHTML = `<iframe
       src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1"
       title="YouTube video player"
@@ -2080,6 +2496,9 @@ function loadYouTubeVideo(videoId){
       referrerpolicy="strict-origin-when-cross-origin"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen></iframe>`;
+
+  // Scroll halus ke player supaya user langsung lihat video yang baru dipilih
+  ytEmbedWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 
@@ -2122,7 +2541,7 @@ function renderFavorites(data){
     item.className = 'yt-fav-item';
     item.innerHTML = `
       <img src="https://img.youtube.com/vi/${fav.videoId}/mqdefault.jpg" alt="Thumbnail" loading="lazy">
-      <span class="yt-fav-title" data-video-id="${fav.videoId}" title="Klik untuk memutar">${escapeHTML(fav.title || fav.videoId)}</span>
+      <span class="yt-fav-title" data-video-id="${fav.videoId}" data-title="${escapeHTML(fav.title || '')}" title="Klik untuk memutar">${escapeHTML(fav.title || fav.videoId)}</span>
       <button class="yt-fav-delete" data-key="${fav.firebaseKey}" title="Hapus dari favorit"><i class="fa-solid fa-trash"></i></button>
     `;
     ytFavListEl.appendChild(item);
@@ -2147,7 +2566,7 @@ btnSaveFavorite.addEventListener('click', async () => {
       body: JSON.stringify({
         id: Date.now(),
         videoId: currentYtVideoId,
-        title: ytUrlInput.value.trim()
+        title: currentYtTitle || `https://youtu.be/${currentYtVideoId}`
       })
     });
     if (!res.ok) throw new Error('Gagal menyimpan favorit');
@@ -2173,7 +2592,7 @@ btnSaveFavorite.addEventListener('click', async () => {
 ytFavListEl.addEventListener('click', (e) => {
   const titleEl = e.target.closest('.yt-fav-title');
   if (titleEl){
-    loadYouTubeVideo(titleEl.dataset.videoId);
+    loadYouTubeVideo(titleEl.dataset.videoId, titleEl.dataset.title);
     return;
   }
 
@@ -2196,6 +2615,119 @@ async function deleteFavorite(firebaseKey){
 }
 
 loadFavorites(); // muat daftar favorit pertama kali saat halaman dibuka
+
+
+/* ===================================================================
+   10) REACTION BAR — reaksi emoji untuk tiap foto/video di Galeri
+        Jumlah reaksi tersimpan di Firebase (terlihat oleh semua pengunjung).
+        Reaksi yang sudah diklik oleh pengunjung ini sendiri ditandai
+        memakai localStorage, supaya tombolnya tetap "menyala" untuknya
+        walau dia reload halaman (tapi tidak memengaruhi tampilan orang lain).
+   =================================================================== */
+const REACTIONS_ENDPOINT = `${FIREBASE_DB_URL}/reactions.json`;
+const REACTION_EMOJIS = ['❤️', '😍', '😂', '🥺', '👍'];
+const MY_REACTIONS_KEY = 'caca_my_reactions'; // localStorage: melacak reaksi APA SAJA yang sudah diklik perangkat ini
+
+function getMyReactions(){
+  const raw = localStorage.getItem(MY_REACTIONS_KEY);
+  return raw ? JSON.parse(raw) : {}; // bentuk: { "gallery-1": "❤️", "video-2": "😂", ... }
+}
+
+function setMyReaction(itemId, emoji){
+  const mine = getMyReactions();
+  mine[itemId] = emoji;
+  localStorage.setItem(MY_REACTIONS_KEY, JSON.stringify(mine));
+}
+
+// --- Ambil semua data reaksi dari Firebase sekali, lalu render ke semua reaction-bar ---
+async function loadReactions(){
+  try {
+    const res = await fetch(REACTIONS_ENDPOINT);
+    if (!res.ok) throw new Error('Gagal mengambil reaksi');
+    const data = await res.json(); // bentuk: { "gallery-1": { "❤️": 3, "😍": 1 }, ... } atau null
+    renderAllReactionBars(data || {});
+  } catch (err) {
+    console.error('Load reactions error:', err);
+    renderAllReactionBars({}); // tetap render tombol kosong walau gagal fetch, supaya UI tidak kosong
+  }
+}
+
+function renderAllReactionBars(allData){
+  const myReactions = getMyReactions();
+
+  document.querySelectorAll('.reaction-bar').forEach((bar) => {
+    const itemId = bar.dataset.itemId;
+    const counts = allData[itemId] || {};
+    const myPick = myReactions[itemId]; // emoji apa yang sudah dipilih user ini untuk item ini (kalau ada)
+
+    bar.innerHTML = '';
+    let totalCount = 0;
+
+    REACTION_EMOJIS.forEach((emoji) => {
+      const count = counts[emoji] || 0;
+      totalCount += count;
+
+      const btn = document.createElement('button');
+      btn.className = 'reaction-btn' + (myPick === emoji ? ' user-reacted' : '');
+      btn.dataset.itemId = itemId;
+      btn.dataset.emoji = emoji;
+      btn.innerHTML = `${emoji}${count > 0 ? `<span class="reaction-count">${count}</span>` : ''}`;
+      bar.appendChild(btn);
+    });
+
+    // Kalau item ini sudah punya reaksi, beri class supaya overlay-nya (di gallery foto) tetap terlihat
+    // tanpa perlu hover dulu — biar reaksi yang sudah ada tetap kelihatan dari awal
+    bar.classList.toggle('has-reactions', totalCount > 0);
+  });
+}
+
+// --- Klik tombol reaksi: kirim/update angka ke Firebase ---
+// Event delegation di document, karena reaction-bar tersebar di banyak section berbeda
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.reaction-btn');
+  if (!btn) return;
+
+  const itemId = btn.dataset.itemId;
+  const emoji = btn.dataset.emoji;
+  const myReactions = getMyReactions();
+  const previousPick = myReactions[itemId];
+
+  // Kalau user klik emoji yang sama yang sudah dia pilih sebelumnya, anggap itu "batal reaksi"
+  const isUnselecting = previousPick === emoji;
+
+  try {
+    // Ambil data reaksi item ini saja dari Firebase (paling baru), supaya tidak menimpa reaksi orang lain
+    const res = await fetch(`${FIREBASE_DB_URL}/reactions/${itemId}.json`);
+    const currentCounts = (await res.json()) || {};
+
+    // Kalau sebelumnya user ini sudah pernah pilih emoji LAIN untuk item ini, kurangi dulu emoji lama itu
+    if (previousPick && currentCounts[previousPick]){
+      currentCounts[previousPick] = Math.max(0, currentCounts[previousPick] - 1);
+    }
+
+    if (isUnselecting){
+      delete myReactions[itemId];
+    } else {
+      currentCounts[emoji] = (currentCounts[emoji] || 0) + 1;
+      myReactions[itemId] = emoji;
+    }
+
+    localStorage.setItem(MY_REACTIONS_KEY, JSON.stringify(myReactions));
+
+    // Simpan ulang seluruh objek counts untuk item ini ke Firebase
+    await fetch(`${FIREBASE_DB_URL}/reactions/${itemId}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentCounts)
+    });
+
+    await loadReactions(); // refresh tampilan semua reaction-bar dengan data terbaru
+  } catch (err) {
+    console.error('Reaction error:', err);
+  }
+});
+
+loadReactions(); // muat semua reaksi pertama kali saat halaman dibuka
 
 
 /* ===================================================================
