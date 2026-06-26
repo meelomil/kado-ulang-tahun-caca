@@ -65,6 +65,12 @@
    ===================================================================== */
 *{ margin:0; padding:0; box-sizing:border-box; }
 
+/* Pastikan atribut HTML "hidden" selalu menang di atas display:flex/grid/dst
+   yang didefinisikan di class CSS manapun. Tanpa ini, elemen yang diberi
+   atribut hidden masih bisa tetap terlihat kalau class-nya punya display custom. */
+[hidden]{ display:none !important; }
+
+
 html{ scroll-behavior:smooth; }
 
 body{
@@ -1298,9 +1304,55 @@ footer{
 }
 footer i{ color: var(--pink-deep); }
 
+/* =====================================================================
+   BACKGROUND MUSIC TOGGLE — tombol mengambang di pojok layar
+   ===================================================================== */
+.bgmusic-toggle{
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pink-deep), var(--orange-deep));
+  color:#fff;
+  border:none;
+  font-size: 1.3rem;
+  cursor:pointer;
+  box-shadow: var(--shadow-soft);
+  z-index: 9000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform 0.25s ease;
+}
+.bgmusic-toggle:hover{ transform: scale(1.1); }
+
+/* Saat musik sedang main, ikon nada berputar pelan sebagai indikator visual */
+.bgmusic-toggle.is-playing i{ animation: spin-slow 4s linear infinite; }
+
+/* Saat musik dimatikan, ikon berubah jadi "muted" dan agak transparan */
+.bgmusic-toggle.is-muted{ opacity: 0.6; }
+
+@media (max-width: 600px){
+  .bgmusic-toggle{ bottom: 16px; right: 16px; width: 46px; height: 46px; font-size: 1.1rem; }
+}
+
 </style>
 </head>
 <body>
+
+<!-- ===================================================================
+     BACKGROUND MUSIC — musik latar otomatis, bisa di-on/off pengunjung
+     GANTI src di tag <audio> di bawah dengan link MP3 kamu dari GitHub
+     Format: https://raw.githubusercontent.com/USERNAME/NAMA-REPO/main/assets/musik-latar.mp3
+     =================================================================== -->
+<audio id="bg-music" loop preload="auto">
+  <source src="" type="audio/mpeg">
+</audio>
+<button id="btn-toggle-bgmusic" class="bgmusic-toggle" title="Nyalakan/matikan musik latar" hidden>
+  <i class="fa-solid fa-music"></i>
+</button>
 
 <!-- ===================================================================
      OPENING SCREEN — layar pembuka sebelum konten utama dibuka
@@ -1847,6 +1899,49 @@ btnOpenSurprise.addEventListener('click', () => {
   startAmbientEffects();
   // Cek elemen yang sudah terlihat di viewport saat halaman pertama dibuka
   setTimeout(checkReveal, 300);
+  // Mulai musik latar — klik tombol ini adalah interaksi pertama user,
+  // jadi browser mengizinkan audio diputar otomatis tepat di sini
+  startBackgroundMusic();
+});
+
+
+/* ===================================================================
+   1b) BACKGROUND MUSIC — musik latar otomatis dengan tombol on/off
+   =================================================================== */
+const bgMusic = document.getElementById('bg-music');
+const btnToggleBgMusic = document.getElementById('btn-toggle-bgmusic');
+
+function startBackgroundMusic(){
+  // Hanya mulai kalau ada sumber musik yang sudah diisi (src tidak kosong)
+  const source = bgMusic.querySelector('source');
+  if (!source.src){
+    return; // belum ada link musik diisi, tombol tetap disembunyikan
+  }
+
+  btnToggleBgMusic.hidden = false;
+  bgMusic.volume = 0.5; // volume sedang, tidak terlalu mengganggu
+  bgMusic.play().then(() => {
+    btnToggleBgMusic.classList.add('is-playing');
+    btnToggleBgMusic.querySelector('i').className = 'fa-solid fa-music';
+  }).catch(() => {
+    // Kalau browser tetap menolak autoplay (kasus jarang), tombol tetap muncul
+    // supaya pengunjung bisa menyalakan musik secara manual dengan klik
+    btnToggleBgMusic.classList.remove('is-playing');
+  });
+}
+
+btnToggleBgMusic.addEventListener('click', () => {
+  if (bgMusic.paused){
+    bgMusic.play();
+    btnToggleBgMusic.classList.add('is-playing');
+    btnToggleBgMusic.classList.remove('is-muted');
+    btnToggleBgMusic.querySelector('i').className = 'fa-solid fa-music';
+  } else {
+    bgMusic.pause();
+    btnToggleBgMusic.classList.remove('is-playing');
+    btnToggleBgMusic.classList.add('is-muted');
+    btnToggleBgMusic.querySelector('i').className = 'fa-solid fa-volume-xmark';
+  }
 });
 
 
