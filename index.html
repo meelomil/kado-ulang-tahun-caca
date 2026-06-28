@@ -716,6 +716,17 @@ section{
   resize: vertical;
   transition: border-color 0.25s ease;
 }
+
+/* Scrollbar khusus untuk textarea pesan: dibuat lebih tipis & tanpa border-radius besar,
+   karena scrollbar global (lihat ::-webkit-scrollbar di atas) terlalu tebal dan bulat
+   untuk kotak kecil ini, sehingga terlihat seperti strip warna yang berantakan di sisi kanan. */
+.message-form textarea::-webkit-scrollbar{ width: 6px; }
+.message-form textarea::-webkit-scrollbar-track{ background: transparent; }
+.message-form textarea::-webkit-scrollbar-thumb{
+  background: var(--pink);
+  border-radius: 6px;
+}
+
 .message-form input:focus, .message-form textarea:focus{
   border-color: var(--pink-deep);
   outline:none;
