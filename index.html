@@ -682,6 +682,16 @@ section{
   display:block;
   background:#000;
 }
+
+/* Class bantuan untuk video yang terekam miring/portrait di HP tertentu, di mana metadata
+   rotasinya tidak terbaca otomatis oleh browser. Rotate 90° lalu scale supaya video yang
+   "sebenarnya portrait" tetap mengisi kotak video-slot (yang berbentuk landscape) dengan rapi,
+   tanpa meninggalkan area kosong di sisi kiri-kanan. */
+.video-rotate-left{
+  transform: rotate(-90deg) scale(1.6);
+  transform-origin: center center;
+}
+
 .video-caption{
   font-family: var(--font-heading);
   font-weight:600;
@@ -1698,29 +1708,29 @@ footer i{ color: var(--pink-deep); }
     <h3 class="video-area-title"><i class="fa-solid fa-video"></i>&nbsp; Video Kenangan</h3>
     <div class="video-grid">
       <div class="video-slot" data-item-id="video-1">
-        <video controls poster="https://placehold.co/400x250/ffd6e6/ff8fab?text=Video+1" preload="metadata">
-          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%282%29.mp4">
+        <video controls preload="metadata">
+          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%281%29.mp4" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 1</p>
         <div class="reaction-bar" data-item-id="video-1"></div>
       </div>
       <div class="video-slot" data-item-id="video-2">
-        <video controls poster="https://placehold.co/400x250/ffe8d6/ffa873?text=Video+2" preload="metadata">
-          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%283%29.mp4">
+        <video class="video-rotate-left" controls preload="metadata">
+          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%282%29.mp4" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 2</p>
         <div class="reaction-bar" data-item-id="video-2"></div>
       </div>
       <div class="video-slot" data-item-id="video-3">
-        <video controls poster="https://placehold.co/400x250/ffd6e6/ff8fab?text=Video+3" preload="metadata">
-          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%284%29.mp4">
+        <video controls preload="metadata">
+          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%283%29.mp4" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 3</p>
         <div class="reaction-bar" data-item-id="video-3"></div>
       </div>
       <div class="video-slot" data-item-id="video-4">
-        <video controls poster="https://placehold.co/400x250/ffe8d6/ffa873?text=Video+4" preload="metadata">
-          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%281%29.mp4">
+        <video controls preload="metadata">
+          <source src="https://raw.githubusercontent.com/meelomil/kado-ulang-tahun-caca/main/assets/video%20%284%29.mp4" type="video/mp4">
         </video>
         <p class="video-caption">Judul Video 4</p>
         <div class="reaction-bar" data-item-id="video-4"></div>
