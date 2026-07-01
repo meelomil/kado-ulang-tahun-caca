@@ -811,36 +811,52 @@ section{
 }
 .msg-photo-label:hover{ background: var(--pink-light); }
 
-.msg-photo-preview-wrap{
-  position:relative;
-  width: 120px;
-  margin: 0 auto 1.2rem; /* margin atas ditambah supaya tombol X yang nongol ke atas tidak kepotong/sulit ditekan */
+/* Grid preview foto yang dipilih sebelum dikirim (multiple foto) */
+.msg-photos-preview-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  justify-content:center;
 }
-.msg-photo-preview-wrap img{
+.msg-photo-preview-item{
+  position:relative;
+  width: 90px;
+  height: 90px;
+}
+.msg-photo-preview-item img{
   width:100%;
+  height:100%;
+  object-fit:cover;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-soft);
   display:block;
 }
-.msg-photo-preview-wrap button{
+.msg-photo-preview-item button{
   position:absolute;
-  top:-10px; right:-10px;
-  width: 32px; height:32px; /* diperbesar dari 26px agar lebih mudah ditekan, terutama di touchscreen */
+  top:-8px; right:-8px;
+  width: 24px; height:24px;
   border-radius:50%;
   background: var(--pink-deep);
   color:#fff;
-  border: 2px solid #fff; /* border putih membantu tombol tetap terlihat jelas di atas foto apa pun */
+  border: 2px solid #fff;
   cursor:pointer;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   display:flex;
   align-items:center;
   justify-content:center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  z-index: 2; /* pastikan tombol selalu di atas foto, tidak tertutup elemen lain */
+  z-index: 2;
 }
-.msg-photo-preview-wrap button:hover{ background: var(--orange-deep); }
+.msg-photo-preview-item button:hover{ background: var(--orange-deep); }
 
 /* Foto yang dilampirkan pada bubble pesan yang sudah terkirim */
+.msg-photos-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
 .message-bubble .msg-photo{
   max-width: 220px;
   border-radius: var(--radius-md);
@@ -1762,7 +1778,7 @@ footer i{ color: var(--pink-deep); }
            di bawah textarea (bukan menumpuk di atasnya) supaya tidak pernah menutupi
            teks yang sedang diketik, terutama saat teks sudah panjang dan textarea ter-scroll. -->
       <div class="msg-textarea-wrap">
-        <textarea id="msg-text" rows="3" placeholder="tuliss yappingan disinii..." required maxlength="300"></textarea>
+        <textarea id="msg-text" rows="4" placeholder="tuliss yappingan disinii..." required maxlength="1000"></textarea>
 
         <div class="msg-emoji-row">
           <button type="button" class="emoji-toggle-btn" id="btn-toggle-emoji" title="Sisipkan emoji">😊 Emoji</button>
@@ -1772,15 +1788,13 @@ footer i{ color: var(--pink-deep); }
         <div class="emoji-panel" id="emoji-panel" hidden></div>
       </div>
 
-      <!-- Upload foto opsional untuk dilampirkan bersama pesan -->
+      <!-- Upload foto opsional, bisa lebih dari satu -->
       <label class="msg-photo-label" id="msg-photo-label">
-        <i class="fa-solid fa-image"></i> Tambah Foto (opsional)
-        <input type="file" id="msg-photo-input" accept="image/*" hidden>
+        <i class="fa-solid fa-image"></i> Tambah Foto (opsional, bisa lebih dari 1)
+        <input type="file" id="msg-photo-input" accept="image/*" multiple hidden>
       </label>
-      <div class="msg-photo-preview-wrap" id="msg-photo-preview-wrap" hidden>
-        <img id="msg-photo-preview" alt="Preview foto pesan">
-        <button type="button" id="btn-remove-msg-photo" title="Hapus foto"><i class="fa-solid fa-xmark"></i></button>
-      </div>
+      <!-- Area preview grid foto yang dipilih, diisi JS secara dinamis -->
+      <div class="msg-photos-preview-grid" id="msg-photos-preview-grid" hidden></div>
 
       <button type="submit"><i class="fa-solid fa-paper-plane"></i>&nbsp; Kirim Pesan</button>
     </form>
@@ -2215,69 +2229,99 @@ const messageListEl = document.getElementById('message-list');
 
 // --- Upload foto opsional di Dinding Pesan ---
 const msgPhotoInput = document.getElementById('msg-photo-input');
-const msgPhotoPreviewWrap = document.getElementById('msg-photo-preview-wrap');
-const msgPhotoPreview = document.getElementById('msg-photo-preview');
-const btnRemoveMsgPhoto = document.getElementById('btn-remove-msg-photo');
+const msgPhotosPreviewGrid = document.getElementById('msg-photos-preview-grid');
 const msgPhotoLabel = document.getElementById('msg-photo-label');
 
-let selectedPhotoBase64 = null; // menyimpan foto terpilih dalam format base64, siap dikirim ke Firebase
+// Array base64 untuk menampung semua foto yang dipilih, dikirim bersama pesan ke Firebase
+let selectedPhotosBase64 = [];
 
-// Batas ukuran file mentah sebelum dikompres ke base64 (Firebase Realtime DB punya limit ukuran per node,
-// dan base64 membuat ukuran data ~33% lebih besar dari file aslinya, jadi foto perlu dikecilkan dulu)
-const MAX_PHOTO_DIMENSION = 800; // piksel, sisi terpanjang foto akan diperkecil ke ukuran ini kalau lebih besar
+const MAX_PHOTO_DIMENSION = 800; // piksel, sisi terpanjang foto dikecilkan ke sini sebelum dijadikan base64
 
-msgPhotoInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+// Kompres & resize satu file foto ke base64 (Promise supaya bisa di-await dalam loop)
+function compressPhotoToBase64(file){
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvasTemp = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > height && width > MAX_PHOTO_DIMENSION){
+          height = Math.round(height * (MAX_PHOTO_DIMENSION / width));
+          width = MAX_PHOTO_DIMENSION;
+        } else if (height > MAX_PHOTO_DIMENSION){
+          width = Math.round(width * (MAX_PHOTO_DIMENSION / height));
+          height = MAX_PHOTO_DIMENSION;
+        }
+        canvasTemp.width = width;
+        canvasTemp.height = height;
+        canvasTemp.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvasTemp.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-  if (!file.type.startsWith('image/')){
-    alert('File yang dipilih bukan gambar.');
-    msgPhotoInput.value = '';
+// Render ulang seluruh grid preview dari array selectedPhotosBase64
+function renderPhotoPreviewGrid(){
+  msgPhotosPreviewGrid.innerHTML = '';
+
+  if (selectedPhotosBase64.length === 0){
+    msgPhotosPreviewGrid.hidden = true;
+    msgPhotoLabel.hidden = false;
     return;
   }
 
-  // Kompres & resize foto lewat canvas sebelum dijadikan base64, supaya ukuran datanya tidak terlalu besar
-  const img = new Image();
-  const reader = new FileReader();
+  msgPhotosPreviewGrid.hidden = false;
+  msgPhotoLabel.hidden = false; // biarkan label tetap terlihat supaya bisa tambah foto lagi
 
-  reader.onload = (event) => {
-    img.onload = () => {
-      const canvasTemp = document.createElement('canvas');
-      let { width, height } = img;
+  selectedPhotosBase64.forEach((base64, index) => {
+    const item = document.createElement('div');
+    item.className = 'msg-photo-preview-item';
+    item.innerHTML = `
+      <img src="${base64}" alt="Preview foto ${index + 1}">
+      <button type="button" data-index="${index}" title="Hapus foto ini"><i class="fa-solid fa-xmark"></i></button>
+    `;
+    msgPhotosPreviewGrid.appendChild(item);
+  });
+}
 
-      if (width > height && width > MAX_PHOTO_DIMENSION){
-        height = Math.round(height * (MAX_PHOTO_DIMENSION / width));
-        width = MAX_PHOTO_DIMENSION;
-      } else if (height > MAX_PHOTO_DIMENSION){
-        width = Math.round(width * (MAX_PHOTO_DIMENSION / height));
-        height = MAX_PHOTO_DIMENSION;
-      }
+msgPhotoInput.addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
 
-      canvasTemp.width = width;
-      canvasTemp.height = height;
-      const tempCtx = canvasTemp.getContext('2d');
-      tempCtx.drawImage(img, 0, 0, width, height);
+  const validFiles = files.filter(f => f.type.startsWith('image/'));
+  if (validFiles.length < files.length){
+    alert('Beberapa file yang dipilih bukan gambar dan akan diabaikan.');
+  }
 
-      // Kualitas 0.7 cukup untuk preview pesan, sambil menjaga ukuran data tetap kecil
-      selectedPhotoBase64 = canvasTemp.toDataURL('image/jpeg', 0.7);
+  // Kompres semua foto yang dipilih secara paralel
+  const newBase64s = await Promise.all(validFiles.map(f => compressPhotoToBase64(f)));
+  selectedPhotosBase64 = selectedPhotosBase64.concat(newBase64s);
+  renderPhotoPreviewGrid();
 
-      msgPhotoPreview.src = selectedPhotoBase64;
-      msgPhotoPreviewWrap.hidden = false;
-      msgPhotoLabel.hidden = true;
-    };
-    img.src = event.target.result;
-  };
-  reader.readAsDataURL(file);
+  // Reset input supaya bisa pilih file yang sama lagi nanti (kalau mau)
+  msgPhotoInput.value = '';
+});
+
+// Hapus foto tertentu dari daftar (klik tombol X di preview-nya)
+msgPhotosPreviewGrid.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-index]');
+  if (!btn) return;
+  const index = Number(btn.dataset.index);
+  selectedPhotosBase64.splice(index, 1);
+  renderPhotoPreviewGrid();
 });
 
 function resetPhotoPreview(){
-  selectedPhotoBase64 = null;
+  selectedPhotosBase64 = [];
   msgPhotoInput.value = '';
-  msgPhotoPreviewWrap.hidden = true;
+  msgPhotosPreviewGrid.hidden = true;
+  msgPhotosPreviewGrid.innerHTML = '';
   msgPhotoLabel.hidden = false;
 }
-
-btnRemoveMsgPhoto.addEventListener('click', resetPhotoPreview);
 
 // Firebase REST API: tambahkan ".json" di akhir URL untuk baca/tulis data
 const MESSAGES_ENDPOINT = `${FIREBASE_DB_URL}/messages.json`;
@@ -2327,7 +2371,10 @@ function renderMessages(data){
       <button class="msg-delete" data-key="${msg.firebaseKey}" title="Hapus pesan"><i class="fa-solid fa-trash"></i></button>
       <div class="msg-name">${escapeHTML(msg.name)}</div>
       <div class="msg-text">${escapeHTML(msg.text)}</div>
-      ${msg.photo ? `<img class="msg-photo" src="${msg.photo}" alt="Foto lampiran pesan" loading="lazy">` : ''}
+      ${msg.photos && msg.photos.length > 0
+        ? `<div class="msg-photos-grid">${msg.photos.map(p => `<img class="msg-photo" src="${p}" alt="Foto lampiran" loading="lazy">`).join('')}</div>`
+        : (msg.photo ? `<img class="msg-photo" src="${msg.photo}" alt="Foto lampiran pesan" loading="lazy">` : '')
+      }
       <div class="msg-time">${formatTimestamp(msg.id)}</div>
     `;
     messageListEl.appendChild(bubble);
@@ -2346,14 +2393,13 @@ messageForm.addEventListener('submit', async (e) => {
   submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Mengirim...';
 
   try {
-    // Kalau ada foto yang dipilih, konversi dulu jadi base64 sebelum dikirim
-    const photoBase64 = selectedPhotoBase64 || null;
+    const photoBase64 = selectedPhotosBase64.length > 0 ? selectedPhotosBase64 : null;
 
     // Firebase REST API: POST ke endpoint .json otomatis membuat entry baru dengan key unik
     const res = await fetch(MESSAGES_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: Date.now(), name, text, photo: photoBase64 })
+      body: JSON.stringify({ id: Date.now(), name, text, photos: photoBase64 })
     });
     if (!res.ok) throw new Error('Gagal mengirim pesan');
 
@@ -2436,7 +2482,13 @@ function insertAtCursor(textarea, text){
 setInterval(loadMessages, 8000);
 
 // --- Export pesan ke file JSON (cadangan tambahan, opsional) ---
-document.getElementById('btn-export-messages').addEventListener('click', async () => {
+const btnExport = document.getElementById('btn-export-messages');
+btnExport.addEventListener('click', async () => {
+  // Cegah klik ganda + beri feedback visual yang jelas bahwa proses sedang berjalan
+  btnExport.disabled = true;
+  const originalHTML = btnExport.innerHTML;
+  btnExport.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunduh...';
+
   try {
     const res = await fetch(MESSAGES_ENDPOINT);
     const data = await res.json();
@@ -2449,8 +2501,18 @@ document.getElementById('btn-export-messages').addEventListener('click', async (
     link.href = URL.createObjectURL(blob);
     link.download = 'pesan-ulang-tahun-caca.json';
     link.click();
+    // Jeda sebentar supaya user tahu unduhan berhasil, bukan langsung hilang teksnya
+    setTimeout(() => {
+      btnExport.innerHTML = '<i class="fa-solid fa-check"></i> Berhasil diunduh!';
+      setTimeout(() => {
+        btnExport.innerHTML = originalHTML;
+        btnExport.disabled = false;
+      }, 1500);
+    }, 300);
   } catch (err) {
     alert('Gagal mengambil data untuk dicadangkan.');
+    btnExport.innerHTML = originalHTML;
+    btnExport.disabled = false;
   }
 });
 
